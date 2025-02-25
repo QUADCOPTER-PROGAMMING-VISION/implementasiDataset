@@ -1,4 +1,3 @@
-#deal
 import argparse
 import os
 import platform
@@ -23,40 +22,50 @@ screen = pygame.display.set_mode((400, 200))
 pygame.display.set_caption("Drone Movement Console")
 font = pygame.font.Font(None, 36)
 
+
 def show_drone_movement(movement):
     screen.fill((0, 0, 0))
     text = font.render(movement, True, (0, 255, 0))
     screen.blit(text, (50, 80))
     pygame.display.flip()
 
+
 def determine_movement(absis, ordinat):
     movement = "Drone Diam"
+    camera_adjustment = ""
+
     if absis < 1:
         movement = "Drone ke Kiri"
+        camera_adjustment = "Geser Kamera ke Kiri"
     elif absis > 1:
         movement = "Drone ke Kanan"
+        camera_adjustment = "Geser Kamera ke Kanan"
     if ordinat < 1:
         movement += " | Drone ke Bawah"
+        camera_adjustment += " | Geser Kamera ke Bawah"
     elif ordinat > 1:
         movement += " | Drone ke Atas"
+        camera_adjustment += " | Geser Kamera ke Atas"
 
     print(movement)
-    show_drone_movement(movement)
+    print(camera_adjustment)
+    show_drone_movement(movement + "\n" + camera_adjustment)
     time.sleep(1)
+
 
 @smart_inference_mode()
 def run(
-    weights="yolov5n.pt",
-    source=2,
-    imgsz=(640, 640),
-    conf_thres=0.5,
-    iou_thres=0.45,
-    max_det=10,
-    device="",
-    line_thickness=3,
-    hide_labels=False,
-    hide_conf=False,
-    half=False,
+        weights="yolov5n.pt",
+        source=2,
+        imgsz=(640, 640),
+        conf_thres=0.5,
+        iou_thres=0.45,
+        max_det=10,
+        device="",
+        line_thickness=3,
+        hide_labels=False,
+        hide_conf=False,
+        half=False,
 ):
     source = str(source)
     device = select_device(device)
@@ -71,8 +80,8 @@ def run(
     imgsz = check_img_size(imgsz, s=stride)
 
     cap = cv2.VideoCapture(int(source))
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)  # 🏎️ Kurangi buffer agar kamera tidak lag
-    cap.set(cv2.CAP_PROP_FPS, 30)  # 🚀 Atur FPS kamera
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+    cap.set(cv2.CAP_PROP_FPS, 30)
 
     if not cap.isOpened():
         print(f"Error: can't open video source {source}")
@@ -88,7 +97,6 @@ def run(
             print("Warning: can't read frame from camera!")
             continue
 
-        # frame = cv2.flip(frame, 1)
         im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         im = torch.from_numpy(im).to(device)
         im = im.half() if model.fp16 else im.float()
@@ -104,8 +112,8 @@ def run(
         zone_width = w / 3
         zone_height = h / 3
 
-        # 🔲 Gambar grid di tampilan kamera
-        for i in range(1, 3):  # Menggambar dua garis vertikal dan dua garis horizontal
+        # Gambar grid di tampilan kamera
+        for i in range(1, 3):
             cv2.line(frame, (int(i * zone_width), 0), (int(i * zone_width), h), (255, 255, 255), 1)
             cv2.line(frame, (0, int(i * zone_height)), (w, int(i * zone_height)), (255, 255, 255), 1)
 
@@ -128,17 +136,6 @@ def run(
                     print(f"Objek {names[c]} di Grid [{absis}], [{ordinat}]")
                     determine_movement(absis, ordinat)
 
-        # ⚡ FPS Optimasi
-        frame_count += 1
-        if frame_count % 10 == 0:
-            fps_end_time = time.time()
-            fps = frame_count / (fps_end_time - fps_start_time)
-            fps_text = f"FPS: {fps:.2f}"
-            (text_width, text_height), _ = cv2.getTextSize(fps_text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
-            x_fps = w - text_width - 20
-            y_fps = h - text_height - 10
-            cv2.putText(frame, fps_text, (x_fps, y_fps), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
-
         cv2.imshow("Object Detection", frame)
 
         for event in pygame.event.get():
@@ -158,26 +155,20 @@ def run(
     cv2.destroyAllWindows()
     pygame.quit()
 
+
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--weights", type=str, default="ahkir.pt", help="model path")
-    parser.add_argument("--source", type=str, default="2", help="DroidCam source")
+    parser.add_argument("--weights", type=str, default="yolov5n.pt", help="model path")
+    parser.add_argument("--source", type=str, default="0", help="DroidCam source")
     parser.add_argument("--imgsz", nargs="+", type=int, default=[640, 640], help="inference size")
-    parser.add_argument("--conf-thres", type=float, default=0.5, help="confidence threshold")
-    parser.add_argument("--iou-thres", type=float, default=0.45, help="NMS IoU threshold")
-    parser.add_argument("--max-det", type=int, default=10, help="maximum detections per image")
-    parser.add_argument("--device", default="", help="cuda device")
-    parser.add_argument("--line-thickness", default=3, type=int, help="bounding box thickness")
-    parser.add_argument("--hide-labels", action="store_true", help="hide labels")
-    parser.add_argument("--hide-conf", action="store_true", help="hide confidences")
-    parser.add_argument("--half", action="store_true", help="use FP16 half-precision")
     opt = parser.parse_args()
     return opt
+
 
 def main(opt):
     run(**vars(opt))
 
+
 if __name__ == "__main__":
     opt = parse_opt()
     main(opt)
-
